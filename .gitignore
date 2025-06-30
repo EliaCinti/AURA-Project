@@ -1,0 +1,34 @@
+# Node
+node_modules/
+.env
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS/macOS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs
+*.log
+
+# Build
+/build
+/dist
+
+# VSCode
+.vscode/
+
+# Dependency directories
+**/node_modules/
+
+# Test coverage
+coverage/
+
+# System Files
+*.swp
+*.swo
+
+# Local CSV data (opzionale se vuoi evitare di caricare dati locali)
+data/*.csv
