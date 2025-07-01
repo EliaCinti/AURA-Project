@@ -17,6 +17,44 @@ app.use(express.static('public'));
 // Configurazione multer per upload file
 const upload = multer({ dest: 'uploads/' });
 
+// Default category colors and list
+const DEFAULT_CATEGORY_COLORS = {
+  Streaming: '#ef4444',
+  Software: '#3b82f6',
+  Fitness: '#10b981',
+  Alimentari: '#f59e0b',
+  Trasporti: '#8b5cf6',
+  Casa: '#6366f1',
+  Telefonia: '#ec4899',
+  Assicurazioni: '#f97316',
+  Banca: '#6b7280',
+  AI: '#14b8a6',
+  Altri: '#84cc16'
+};
+
+const DEFAULT_CATEGORIES = Object.entries(DEFAULT_CATEGORY_COLORS).map(
+  ([name, color]) => ({ name, color })
+);
+
+function generateColor(name) {
+  const colors = [
+    '#ef4444',
+    '#3b82f6',
+    '#10b981',
+    '#f59e0b',
+    '#8b5cf6',
+    '#6366f1',
+    '#ec4899',
+    '#f97316',
+    '#14b8a6',
+    '#84cc16'
+  ];
+  const index =
+    name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) %
+    colors.length;
+  return colors[index];
+}
+
 // Path per il file CSV delle spese
 const EXPENSES_CSV_PATH = path.join(__dirname, 'data', 'expenses.csv');
 const DATA_DIR = path.join(__dirname, 'data');
@@ -99,7 +137,13 @@ async function readCategoriesFromCSV() {
         .pipe(csv())
         .on('data', (row) => {
           if (row.name) {
-            categories.push(row.name);
+            categories.push({
+              name: row.name,
+              color:
+                row.color ||
+                DEFAULT_CATEGORY_COLORS[row.name] ||
+                generateColor(row.name)
+            });
           }
         })
         .on('end', () => {
@@ -110,11 +154,8 @@ async function readCategoriesFromCSV() {
         });
     });
   } catch (error) {
-    // Categorie di default
-    return [
-      'Streaming', 'Software', 'Fitness', 'Alimentari', 'Trasporti', 
-      'Casa', 'Telefonia', 'Assicurazioni', 'Banca', 'AI', 'Altri'
-    ];
+    // Categorie di default con colore
+    return DEFAULT_CATEGORIES;
   }
 }
 
@@ -124,12 +165,12 @@ async function writeCategoriesToCSV(categories) {
   const csvWriter = createObjectCsvWriter({
     path: CATEGORIES_CSV_PATH,
     header: [
-      { id: 'name', title: 'name' }
+      { id: 'name', title: 'name' },
+      { id: 'color', title: 'color' }
     ]
   });
 
-  const csvData = categories.map(category => ({ name: category }));
-  await csvWriter.writeRecords(csvData);
+  await csvWriter.writeRecords(categories);
 }
 
 // Routes API
@@ -142,6 +183,25 @@ app.get('/api/expenses', async (req, res) => {
   } catch (error) {
     console.error('Errore nel leggere le spese:', error);
     res.status(500).json({ success: false, error: 'Errore nel leggere le spese' });
+  }
+});
+
+// DELETE /api/categories/:name - Elimina una categoria
+app.delete('/api/categories/:name', async (req, res) => {
+  try {
+    const name = decodeURIComponent(req.params.name);
+    const categories = await readCategoriesFromCSV();
+    const filtered = categories.filter(cat => cat.name !== name);
+
+    if (filtered.length === categories.length) {
+      return res.status(404).json({ success: false, error: 'Categoria non trovata' });
+    }
+
+    await writeCategoriesToCSV(filtered);
+    res.json({ success: true, message: 'Categoria eliminata con successo' });
+  } catch (error) {
+    console.error('Errore nell\'eliminare la categoria:', error);
+    res.status(500).json({ success: false, error: 'Errore nell\'eliminare la categoria' });
   }
 });
 
@@ -211,29 +271,35 @@ app.get('/api/categories', async (req, res) => {
 // POST /api/categories - Aggiungi una nuova categoria
 app.post('/api/categories', async (req, res) => {
   try {
-    const { name } = req.body;
+    
+    const { name, color } = req.body;    
     
     if (!name || name.trim() === '') {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Il nome della categoria è obbligatorio' 
+      return res.status(400).json({
+        success: false,
+        error: 'Il nome della categoria è obbligatorio'
       });
     }
 
     const categories = await readCategoriesFromCSV();
     const categoryName = name.trim();
     
-    if (categories.includes(categoryName)) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'La categoria esiste già' 
+    if (categories.some(cat => cat.name === categoryName)) {
+      return res.status(400).json({
+        success: false,
+        error: 'La categoria esiste già'
       });
     }
 
-    categories.push(categoryName);
+    const newCategory = {
+      name: categoryName,
+      color: color || generateColor(categoryName)
+    };
+
+    categories.push(newCategory);
     await writeCategoriesToCSV(categories);
 
-    res.json({ success: true, data: categoryName });
+    res.json({ success: true, data: newCategory });
   } catch (error) {
     console.error('Errore nell\'aggiungere la categoria:', error);
     res.status(500).json({ success: false, error: 'Errore nell\'aggiungere la categoria' });
@@ -284,7 +350,8 @@ app.post('/api/import', upload.single('csvFile'), async (req, res) => {
     }
 
     const expenses = [];
-    const categories = new Set(await readCategoriesFromCSV());
+    const existingCats = await readCategoriesFromCSV();
+    const categories = new Set(existingCats.map(c => c.name));
 
     return new Promise((resolve, reject) => {
       require('fs').createReadStream(req.file.path)
@@ -317,7 +384,11 @@ app.post('/api/import', upload.single('csvFile'), async (req, res) => {
             
             // Salva tutto
             await writeExpensesToCSV(allExpenses);
-            await writeCategoriesToCSV(Array.from(categories));
+            const categoryObjects = Array.from(categories).map(name => ({
+              name,
+              color: DEFAULT_CATEGORY_COLORS[name] || generateColor(name)
+            }));
+            await writeCategoriesToCSV(categoryObjects);
 
             // Pulisci il file temporaneo
             await fs.unlink(req.file.path);

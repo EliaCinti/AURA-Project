@@ -19,6 +19,9 @@ const ExpenseTracker = ({ isOnline, serverStatus, showNotification }) => {
   const [showForm, setShowForm] = useState(false);
   const [selectedCategories, setSelectedCategories] = useState([]);
 
+  const pastelColors = ['#fbcfe8','#fef9c3','#d1fae5','#bfdbfe','#ddd6fe','#fde2e4','#ffe5d9','#fff1e6','#e2eafc','#d4e2d4'];
+  const [newCategoryColor, setNewCategoryColor] = useState(pastelColors[0]);
+
   // Palette colori pastello per un look più morbido
   const categoryColors = {
     'Streaming': '#fecaca', // rosso chiaro
@@ -78,9 +81,17 @@ const ExpenseTracker = ({ isOnline, serverStatus, showNotification }) => {
       const response = await fetch('/api/categories', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: category })
+        body: JSON.stringify(category)
       });
       if (!response.ok) throw new Error('Failed to add category');
+      return response.json();
+    },
+
+    async deleteCategory(name) {
+      const response = await fetch(`/api/categories/${encodeURIComponent(name)}`, {
+        method: 'DELETE'
+      });
+      if (!response.ok) throw new Error('Failed to delete category');
       return response.json();
     },
 
@@ -118,8 +129,13 @@ const loadData = async () => {
       api.fetchCategories()
     ]);
 
-    setExpenses(expensesData.data);     
-    setCategories(categoriesData.data);  
+    setExpenses(expensesData.data);
+    const fetchedCategories = categoriesData.data.map(cat =>
+      typeof cat === 'string'
+        ? { name: cat, color: generateColor(cat) }
+        : { name: cat.name, color: cat.color || generateColor(cat.name) }
+    );
+    setCategories(fetchedCategories);
     setLastSync(new Date());
     showNotification('Dati caricati con successo', 'success');
   } catch (error) {
@@ -150,33 +166,52 @@ const loadData = async () => {
   const totalMonthly = expenses.reduce((sum, expense) => sum + parseFloat(expense.amount || 0), 0);
 
   const addCategory = async () => {
-    if (!newExpense.newCategory || categories.includes(newExpense.newCategory)) return;
-    
+    if (!newExpense.newCategory || categories.some(c => c.name === newExpense.newCategory)) return;
+    const newCat = { name: newExpense.newCategory, color: newCategoryColor };
     if (serverStatus === 'online') {
       try {
-        await api.addCategory(newExpense.newCategory);
-        setCategories([...categories, newExpense.newCategory]);
-        setSelectedCategories([...selectedCategories, newExpense.newCategory]);
-        setNewExpense({...newExpense, newCategory: ''});
+        const result = await api.addCategory(newCat);
+        const added = result.data || newCat;
+        setCategories([...categories, added]);
+        setSelectedCategories([...selectedCategories, added.name]);
+        setNewExpense({ ...newExpense, newCategory: '' });
+        setNewCategoryColor(pastelColors[0]);
         showNotification('Categoria aggiunta', 'success');
       } catch (error) {
-        showNotification('Errore nell\'aggiunta della categoria', 'error');
+        showNotification("Errore nell'aggiunta della categoria", 'error');
       }
     } else {
       // Offline mode
-      setCategories([...categories, newExpense.newCategory]);
-      setSelectedCategories([...selectedCategories, newExpense.newCategory]);
-      setNewExpense({...newExpense, newCategory: ''});
+      setCategories([...categories, newCat]);
+      setSelectedCategories([...selectedCategories, newCat.name]);
+      setNewExpense({ ...newExpense, newCategory: '' });
+      setNewCategoryColor(pastelColors[0]);
       showNotification('Categoria aggiunta (offline)', 'warning');
     }
   };
 
-  const toggleCategory = (category) => {
-    if (selectedCategories.includes(category)) {
-      setSelectedCategories(selectedCategories.filter(c => c !== category));
+  const toggleCategory = (categoryName) => {
+    if (selectedCategories.includes(categoryName)) {
+      setSelectedCategories(selectedCategories.filter(c => c !== categoryName));
     } else {
-      setSelectedCategories([...selectedCategories, category]);
+      setSelectedCategories([...selectedCategories, categoryName]);
     }
+  };
+
+  const deleteCategory = async (name) => {
+    if (serverStatus === 'online') {
+      try {
+        await api.deleteCategory(name);
+        showNotification('Categoria eliminata', 'success');
+      } catch (error) {
+        showNotification("Errore nell'eliminazione della categoria", 'error');
+        return;
+      }
+    } else {
+      showNotification('Categoria eliminata (offline)', 'warning');
+    }
+    setCategories(categories.filter(c => c.name !== name));
+    setSelectedCategories(selectedCategories.filter(c => c !== name));
   };
 
   const addExpense = async () => {
@@ -207,6 +242,7 @@ const loadData = async () => {
     // Reset form
     setNewExpense({ name: '', amount: '', categories: [], newCategory: '' });
     setSelectedCategories([]);
+    setNewCategoryColor(pastelColors[0]);
     setShowForm(false);
   };
 
@@ -485,20 +521,30 @@ const loadData = async () => {
             {/* Create New Category */}
             <div className="mt-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">Crea Nuova Categoria</label>
-              <div className="flex gap-2">
+              <div className="flex gap-2 items-center">
                 <input
                   type="text"
                   value={newExpense.newCategory}
-                  onChange={(e) => setNewExpense({...newExpense, newCategory: e.target.value})}
+                  onChange={(e) => setNewExpense({ ...newExpense, newCategory: e.target.value })}
                   placeholder="Nome nuova categoria..."
                   className="input-primary flex-1"
                 />
-                <button
-                  onClick={addCategory}
-                  className="btn-success"
-                >
+                <button onClick={addCategory} className="btn-success">
                   Aggiungi
                 </button>
+              </div>
+              <div className="flex gap-2 mt-2">
+                {pastelColors.map(color => (
+                  <button
+                    key={color}
+                    type="button"
+                    onClick={() => setNewCategoryColor(color)}
+                    className={`w-6 h-6 rounded-full border-2 ${newCategoryColor === color ? 'border-gray-800' : 'border-transparent'}`}
+                    style={{ backgroundColor: color }}
+                  >
+                    <span className="sr-only">{color}</span>
+                  </button>
+                ))}
               </div>
             </div>
 
@@ -508,18 +554,31 @@ const loadData = async () => {
                 Categorie ({selectedCategories.length} selezionate)
               </label>
               <div className="flex flex-wrap gap-2">
-                {categories.map(category => (
-                  <button
-                    key={category}
-                    onClick={() => toggleCategory(category)}
-                    className={`px-3 py-2 rounded-full text-sm font-medium transition-colors ${
-                      selectedCategories.includes(category)
-                        ? 'bg-blue-200 text-blue-800'
-                        : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                    }`}
-                  >
-                    {category}
-                  </button>
+                {categories.map(cat => (
+                  <div key={cat.name} className="relative">
+                    <button
+                      type="button"
+                      onClick={() => toggleCategory(cat.name)}
+                      className="px-3 py-2 rounded-lg text-sm font-medium"
+                      style={{
+                        backgroundColor: selectedCategories.includes(cat.name)
+                          ? cat.color
+                          : '#e5e7eb',
+                        color: selectedCategories.includes(cat.name)
+                          ? '#fff'
+                          : '#374151'
+                      }}
+                    >
+                      {cat.name}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => deleteCategory(cat.name)}
+                      className="absolute -top-2 -right-2 text-red-500 hover:text-red-700"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
                 ))}
               </div>
             </div>
@@ -537,6 +596,7 @@ const loadData = async () => {
                   setShowForm(false);
                   setSelectedCategories([]);
                   setNewExpense({ name: '', amount: '', categories: [], newCategory: '' });
+                  setNewCategoryColor(pastelColors[0]);
                 }}
                 className="btn-secondary"
               >
