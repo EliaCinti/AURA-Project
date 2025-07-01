@@ -19,16 +19,27 @@ const ExpenseTracker = ({ isOnline, serverStatus, showNotification }) => {
   const [showForm, setShowForm] = useState(false);
   const [selectedCategories, setSelectedCategories] = useState([]);
 
+  // Palette colori pastello per un look più morbido
   const categoryColors = {
-    'Streaming': '#ef4444', 'Software': '#3b82f6', 'Fitness': '#10b981', 
-    'Alimentari': '#f59e0b', 'Trasporti': '#8b5cf6', 'Casa': '#6366f1',
-    'Telefonia': '#ec4899', 'Assicurazioni': '#f97316', 'Banca': '#6b7280', 
-    'AI': '#14b8a6', 'Altri': '#84cc16'
+    'Streaming': '#fecaca', // rosso chiaro
+    'Software': '#bfdbfe',  // azzurro chiaro
+    'Fitness': '#bbf7d0',   // verde chiaro
+    'Alimentari': '#fde68a',
+    'Trasporti': '#ddd6fe',
+    'Casa': '#c7d2fe',
+    'Telefonia': '#fbcfe8',
+    'Assicurazioni': '#fdba74',
+    'Banca': '#e5e7eb',
+    'AI': '#99f6e4',
+    'Altri': '#d9f99d'
   };
 
   const generateColor = (category) => {
     if (categoryColors[category]) return categoryColors[category];
-    const colors = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#6366f1', '#ec4899', '#f97316', '#14b8a6', '#84cc16'];
+    const colors = [
+      '#fecaca', '#bfdbfe', '#bbf7d0', '#fde68a', '#ddd6fe',
+      '#c7d2fe', '#fbcfe8', '#fdba74', '#99f6e4', '#d9f99d'
+    ];
     const index = category.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % colors.length;
     return colors[index];
   };
@@ -501,10 +512,10 @@ const loadData = async () => {
                   <button
                     key={category}
                     onClick={() => toggleCategory(category)}
-                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    className={`px-3 py-2 rounded-full text-sm font-medium transition-colors ${
                       selectedCategories.includes(category)
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                        ? 'bg-blue-200 text-blue-800'
+                        : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
                     }`}
                   >
                     {category}
@@ -594,8 +605,8 @@ const loadData = async () => {
                 return (
                   <div key={category} className="bg-gray-50 rounded-lg p-4">
                     <div className="flex justify-between items-center mb-2">
-                      <span 
-                        className="badge text-white"
+                      <span
+                        className="badge text-gray-800"
                         style={{ backgroundColor: generateColor(category) }}
                       >
                         {category}
@@ -635,7 +646,7 @@ const loadData = async () => {
                       {(Array.isArray(expense.categories) ? expense.categories : []).map(category => (
                         <span 
                           key={category}
-                          className="badge text-white text-xs"
+                          className="badge text-gray-800 text-xs"
                           style={{ backgroundColor: generateColor(category) }}
                         >
                           {category}

@@ -117,20 +117,64 @@ code {
 
 /* Custom Button Styles */
 .btn-primary {
-  @apply bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50;
+ display: inline-block;
+  background-color: #2563eb;
+  color: #fff;
+  padding: 0.5rem 1rem;
+  font-weight: 500;
+  border-radius: 0.5rem;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
+
+.btn-primary:hover {
+  background-color: #1d4ed8;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transform: scale(1.05);}
 
 .btn-secondary {
-  @apply bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-lg transition-all duration-200;
+display: inline-block;
+  background-color: #e5e7eb;
+  color: #1f2937;
+  padding: 0.5rem 1rem;
+  font-weight: 500;
+  border-radius: 0.5rem;
+  transition: background-color 0.2s ease;
 }
+
+.btn-secondary:hover {
+  background-color: #d1d5db;}
 
 .btn-success {
-  @apply bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg;
+display: inline-block;
+  background-color: #16a34a;
+  color: #fff;
+  padding: 0.5rem 1rem;
+  font-weight: 500;
+  border-radius: 0.5rem;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.btn-danger {
-  @apply bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200;
+.btn-success:hover {
+  background-color: #15803d;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
+
+.btn-success:disabled {
+  background-color: #9ca3af;
+  cursor: not-allowed;}
+
+.btn-danger {
+display: inline-block;
+  background-color: #dc2626;
+  color: #fff;
+  padding: 0.5rem 1rem;
+  font-weight: 500;
+  border-radius: 0.5rem;
+  transition: background-color 0.2s ease;
+}
+
+.btn-danger:hover {
+  background-color: #b91c1c;}
 
 /* Custom Card Styles */
 .card {
@@ -152,7 +196,11 @@ code {
 
 /* Custom Badge Styles */
 .badge {
-  @apply px-3 py-1 rounded-full text-sm font-medium;
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 500;
 }
 
 .badge-primary {
