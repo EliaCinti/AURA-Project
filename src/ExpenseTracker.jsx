@@ -47,6 +47,11 @@ const ExpenseTracker = ({ isOnline, serverStatus, showNotification }) => {
     return colors[index];
   };
 
+    const getCategoryColor = (name) => {
+    const found = categories.find(c => c.name === name);
+    return found ? found.color : generateColor(name);
+  };
+
   // API Functions
   const api = {
     async fetchExpenses() {
@@ -329,7 +334,7 @@ const loadData = async () => {
     return usedCategories.map(category => ({
       name: category,
       value: getCategoryTotal(category),
-      color: generateColor(category)
+      color: getCategoryColor(category)
     })).filter(item => item.value > 0);
   };
 
@@ -667,7 +672,7 @@ const loadData = async () => {
                     <div className="flex justify-between items-center mb-2">
                       <span
                         className="badge text-gray-800"
-                        style={{ backgroundColor: generateColor(category) }}
+                        style={{ backgroundColor: getCategoryColor(category) }}
                       >
                         {category}
                       </span>
@@ -707,7 +712,7 @@ const loadData = async () => {
                         <span 
                           key={category}
                           className="badge text-gray-800 text-xs"
-                          style={{ backgroundColor: generateColor(category) }}
+                          style={{ backgroundColor: getCategoryColor(category) }}
                         >
                           {category}
                         </span>
