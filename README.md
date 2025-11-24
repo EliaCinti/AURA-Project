@@ -1,20 +1,41 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# AURA - Personal Finance Manager
 
-# Run and deploy your AI Studio app
+**AURA** è un'applicazione web elegante, moderna e **completamente locale** per la gestione delle finanze personali.
 
-This contains everything you need to run your app locally.
+## 🚀 Come avviare l'app (Metodo Corretto)
 
-View your app in AI Studio: https://ai.studio/apps/drive/1me466yOI6E--GKzQRrYbkihiULusgJvw
+Poiché l'app usa file **.tsx** (React + TypeScript), i browser non possono leggerla direttamente con Live Server. Hai bisogno di Node.js (è lo standard per questo tipo di app).
 
-## Run Locally
+### 1. Pre-requisiti
+Assicurati di aver installato **Node.js** sul tuo computer (scarica la versione "LTS" da [nodejs.org](https://nodejs.org)).
 
-**Prerequisites:**  Node.js
+### 2. Installazione
+Apri il terminale nella cartella dove hai salvato i file e scrivi:
 
+```bash
+npm install
+```
+*(Questo scaricherà le librerie necessarie come React)*
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+### 3. Avvio
+Sempre nel terminale, scrivi:
+
+```bash
+npm run dev
+```
+
+Il browser si aprirà automaticamente su `http://localhost:3000` e l'app funzionerà perfettamente!
+
+## ✨ Funzionalità
+
+*   **100% Privacy**: Nessun dato viene inviato a server esterni. Tutto rimane nel tuo browser (LocalStorage).
+*   **Zero Costi**: Non richiede API Key.
+*   **Gestione Abbonamenti**: Tieni traccia di Netflix, Spotify, Palestra, Software AI, ecc.
+*   **Import/Export**: Salva i tuoi dati in un file JSON e portali dove vuoi.
+
+## 🛠 Tecnologie
+
+*   **Vite**: Per l'avvio rapido.
+*   **React 18**: Framework UI.
+*   **Tailwind CSS**: Per lo styling.
+*   **Recharts**: Per i grafici.

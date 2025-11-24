@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState, useMemo } from 'react';
+import React, { useCallback, useEffect, useState, useMemo, useRef } from 'react';
 import { Category, Expense, ExpenseType, Frequency } from './types';
 import { Badge, Button, Card, SmartIcon } from './components/UIComponents';
 import { ExpenseForm } from './components/ExpenseForm';
@@ -25,6 +25,9 @@ function App() {
   
   // New state for Annual vs Monthly view
   const [viewBasis, setViewBasis] = useState<ViewBasis>('monthly');
+
+  // File input ref for import
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load initial data with migration for old 'category' string field
   useEffect(() => {
@@ -134,6 +137,42 @@ function App() {
     URL.revokeObjectURL(url);
   };
 
+  const triggerImport = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleImportFile = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const result = e.target?.result;
+        if (typeof result === 'string') {
+          const importedData = JSON.parse(result);
+          
+          // Basic validation: check if array
+          if (Array.isArray(importedData)) {
+            // We could verify structure here, but for now let's trust the array
+            if (window.confirm(`Trovate ${importedData.length} spese nel backup. Vuoi sovrascrivere i dati attuali?`)) {
+               setExpenses(importedData);
+               alert('Importazione completata con successo!');
+            }
+          } else {
+            alert('Il file selezionato non è un backup valido di AURA.');
+          }
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Errore durante la lettura del file. Assicurati che sia un JSON valido.');
+      }
+      // Reset input so same file can be selected again
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    };
+    reader.readAsText(file);
+  };
+
   // Calculations
   const calculateTotal = useCallback((basis: ViewBasis) => {
     return expenses.reduce((acc, curr) => {
@@ -223,6 +262,15 @@ function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 pb-20 md:pb-0">
+      {/* Hidden File Input for Import */}
+      <input 
+        type="file" 
+        ref={fileInputRef} 
+        onChange={handleImportFile} 
+        className="hidden" 
+        accept=".json"
+      />
+
       {/* Header */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-4 py-4 flex justify-between items-center">
@@ -234,27 +282,47 @@ function App() {
           </div>
           
           <div className="flex items-center gap-2">
-            {/* Export Button Desktop */}
-            <Button 
-                variant="secondary" 
-                onClick={exportData} 
-                className="hidden md:flex text-sm" 
-                title="Scarica backup JSON"
-            >
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
-                Esporta
-            </Button>
+             {/* Import/Export Buttons Desktop */}
+             <div className="hidden md:flex gap-2">
+                <Button 
+                    variant="ghost" 
+                    onClick={triggerImport} 
+                    className="text-sm text-slate-500 hover:text-emerald-600" 
+                    title="Importa backup JSON"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+                    Importa
+                </Button>
+                <Button 
+                    variant="secondary" 
+                    onClick={exportData} 
+                    className="text-sm" 
+                    title="Scarica backup JSON"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+                    Esporta
+                </Button>
+            </div>
 
-            {/* Export Button Mobile */}
-            <button 
-                onClick={exportData}
-                className="md:hidden p-2 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors"
-                title="Esporta dati"
-            >
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
-            </button>
+            {/* Mobile Actions */}
+            <div className="md:hidden flex">
+                <button 
+                    onClick={triggerImport}
+                    className="p-2 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors"
+                    title="Importa dati"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+                </button>
+                <button 
+                    onClick={exportData}
+                    className="p-2 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors"
+                    title="Esporta dati"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+                </button>
+            </div>
 
-            <div className="hidden md:block">
+            <div className="hidden md:block border-l border-slate-200 pl-2 ml-2">
                 <Button onClick={openAddForm} className="text-sm">
                 + Nuova Spesa
                 </Button>
